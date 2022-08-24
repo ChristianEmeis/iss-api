@@ -20,7 +20,7 @@ async fn main() {
         (StatusCode::REQUEST_TIMEOUT, "timeout")
     }))
     .layer(BufferLayer::new(1024))
-    .layer(RateLimitLayer::new(1, Duration::from_secs(2))),);
+    .layer(RateLimitLayer::new(5, Duration::from_secs(60))),);
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
     .serve(app.into_make_service())
     .await
