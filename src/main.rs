@@ -21,8 +21,11 @@ async fn main() {
                     (StatusCode::REQUEST_TIMEOUT, "timeout")
                 }))
                 .layer(BufferLayer::new(1024))
+                // here you can change the Rate Limit (Preset 5 requests per minute)
                 .layer(RateLimitLayer::new(5, Duration::from_secs(60))),
         );
+
+        // here you can change on which ip / port the api is running
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
         .await
@@ -47,15 +50,15 @@ pub async fn get_iss_pos() -> (StatusCode, Json<Value>) {
         iss_tle_mutex.last_updated = chrono::offset::Utc::now().timestamp();
     }
     let satrec = satellite::io::twoline2satrec(
-        &iss_tle_mutex.line1.as_ref().unwrap(),
-        &iss_tle_mutex.line2.as_ref().unwrap(),
+        iss_tle_mutex.line1.as_ref().unwrap(),
+        iss_tle_mutex.line2.as_ref().unwrap(),
     );
     drop(iss_tle_mutex);
 
     let time = chrono::Utc::now();
     let timestamp = time.timestamp();
     let result =
-        satellite::propogation::propogate_datetime(&mut satrec.as_ref().unwrap(), time).unwrap();
+        satellite::propogation::propogate_datetime(satrec.as_ref().unwrap(), time).unwrap();
 
     let gmst = satellite::propogation::gstime::gstime_datetime(time);
     let sat_pos = satellite::transforms::eci_to_geodedic(&result.position, gmst);
@@ -63,7 +66,7 @@ pub async fn get_iss_pos() -> (StatusCode, Json<Value>) {
     let res = IssPos {
         lat: sat_pos.latitude * satellite::constants::RAD_TO_DEG,
         lon: sat_pos.longitude * satellite::constants::RAD_TO_DEG,
-        timestamp: timestamp,
+        timestamp,
         height: sat_pos.height,
     };
     (StatusCode::OK, Json(json!(res)))
@@ -81,6 +84,8 @@ static ISSTLE: async_mutex::Mutex<IssTLE> = async_mutex::Mutex::new(IssTLE {
     last_updated: 0,
 });
 
+// this function returns an updated IssTLE which is fetched from the official NASA Api, if there is an
+// error fetching it it will return a hardcoded default value
 async fn get_iss_tle() -> IssTLE {
     let url = "https://tle.ivanstanojevic.me/api/tle/25544";
     let client = reqwest::Client::new();
@@ -88,7 +93,7 @@ async fn get_iss_tle() -> IssTLE {
 
     match response.json::<Events>().await {
         Ok(parsed) => {
-            return IssTLE {
+            IssTLE {
                 line1: Some(parsed.line1.unwrap()),
                 line2: Some(parsed.line2.unwrap()),
                 last_updated: chrono::offset::Utc::now().timestamp(),
@@ -96,7 +101,7 @@ async fn get_iss_tle() -> IssTLE {
         }
         Err(_) => {
             println!("Hm, the response didn't match the shape we expected.");
-            return IssTLE {
+            IssTLE {
                 line1: Some(
                     "1 25544C 98067A   22200.25763889 -.00062278  00000-0 -10890-2 0   600"
                         .to_string(),
@@ -106,9 +111,9 @@ async fn get_iss_tle() -> IssTLE {
                         .to_string(),
                 ),
                 last_updated: chrono::offset::Utc::now().timestamp(),
-            };
+            }
         }
-    };
+    }
 }
 
 extern crate serde_derive;
@@ -160,8 +165,8 @@ async fn get_iss_path() -> (StatusCode, Json<Value>) {
             iss_tle_mutex.last_updated = chrono::offset::Utc::now().timestamp();
         }
         let satrec = satellite::io::twoline2satrec(
-            &iss_tle_mutex.line1.as_ref().unwrap(),
-            &iss_tle_mutex.line2.as_ref().unwrap(),
+            iss_tle_mutex.line1.as_ref().unwrap(),
+            iss_tle_mutex.line2.as_ref().unwrap(),
         );
         drop(iss_tle_mutex);
         let mut time = Utc::now();
@@ -173,7 +178,7 @@ async fn get_iss_path() -> (StatusCode, Json<Value>) {
 
         while time <= end {
             let result =
-                satellite::propogation::propogate_datetime(&mut satrec.as_ref().unwrap(), time)
+                satellite::propogation::propogate_datetime(satrec.as_ref().unwrap(), time)
                     .unwrap();
 
             let gmst = satellite::propogation::gstime::gstime_datetime(time);
@@ -183,7 +188,7 @@ async fn get_iss_path() -> (StatusCode, Json<Value>) {
                 lon: sat_pos.longitude * satellite::constants::RAD_TO_DEG,
             };
             vec.push(temp_point);
-            time = time + ChronoDuration::seconds(60);
+            time +=ChronoDuration::seconds(60);
         }
         path_mutex.time = Some(now);
         path_mutex.path = vec;
@@ -194,4 +199,5 @@ async fn get_iss_path() -> (StatusCode, Json<Value>) {
     };
     drop(path_mutex);
     (StatusCode::OK, Json(json!(return_path)))
+
 }
