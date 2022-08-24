@@ -10,7 +10,7 @@
 - "iss.emeis.dev/isspos"
 #### Example Response: 
 
-```json
+```json5
 {
     "lat": -45.81572038607639, // Current latitude of the ISS
     "lon": 57.84392412960222, // Current longitude of the ISS
@@ -24,7 +24,7 @@
 - *Note: Due to this calculation beeing relatively "resource costly", the path is beeing cached for 30 seconds*
 #### Example Response: 
 
-```json
+```json5
 {
     "time": "2022-08-24T18:10:39.758711357Z", // Time when the data was calculated
     "path": [   // 92 Path Objects with a difference of 1 minute each containing the latitude and longitude at the time
