@@ -7,7 +7,7 @@
 - There is a rate limit of 5 Requests per minute (both endpoints combined)
 
 ### ISS Position Endpoint
-- "iss.emeis.dev/isspos"
+- "localhost:3000/isspos"
 #### Example Response: 
 
 ```json5
@@ -20,7 +20,7 @@
 ```
 
 ### ISS Path Endpoint
-- "iss.emeis.dev/isspath"
+- "localhost:3000/isspath"
 - *Note: Due to this calculation beeing relatively "resource costly", the path is beeing cached for 30 seconds*
 #### Example Response: 
 
