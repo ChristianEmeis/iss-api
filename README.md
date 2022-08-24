@@ -21,6 +21,7 @@
 
 ### ISS Path Endpoint
 - "iss.emeis.dev/isspath"
+- *Note: Due to this calculation beeing relatively "resource costly", the path is beeing cached for 30 seconds*
 #### Example Response: 
 
 ```json
