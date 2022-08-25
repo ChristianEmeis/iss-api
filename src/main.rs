@@ -2,7 +2,7 @@ use axum::error_handling::HandleErrorLayer;
 use axum::response::Json;
 use axum::{routing::get, Router};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
-use reqwest::*;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -49,9 +49,18 @@ pub async fn get_iss_pos() -> (StatusCode, Json<Value>) {
         iss_tle_mutex.line2 = updated_tle.line2;
         iss_tle_mutex.last_updated = chrono::offset::Utc::now().timestamp();
     }
+
+    let str1 = match iss_tle_mutex.line1.as_ref() {
+        None => "1 25544C 98067A   22200.25763889 -.00062278  00000-0 -10890-2 0   600",
+        Some(c) => c       
+    };
+    let str2 = match iss_tle_mutex.line2.as_ref() {
+        None => "2 25544  51.6399 177.7528 0005075  27.4260 127.4524 15.49998601    18",
+        Some(c) => c       
+    };
     let satrec = satellite::io::twoline2satrec(
-        iss_tle_mutex.line1.as_ref().unwrap(),
-        iss_tle_mutex.line2.as_ref().unwrap(),
+        str1,
+        str2,
     );
     drop(iss_tle_mutex);
 
@@ -91,15 +100,14 @@ async fn get_iss_tle() -> IssTLE {
     let client = reqwest::Client::new();
     let response = client.get(url).send().await.unwrap();
 
-    match response.json::<Events>().await {
-        Ok(parsed) => {
+    if let Ok(parsed) = response.json::<Events>().await{
             IssTLE {
                 line1: Some(parsed.line1.unwrap()),
                 line2: Some(parsed.line2.unwrap()),
                 last_updated: chrono::offset::Utc::now().timestamp(),
             }
         }
-        Err(_) => {
+        else{
             println!("Hm, the response didn't match the shape we expected.");
             IssTLE {
                 line1: Some(
@@ -114,7 +122,7 @@ async fn get_iss_tle() -> IssTLE {
             }
         }
     }
-}
+
 
 extern crate serde_derive;
 
