@@ -13,6 +13,6 @@ serde = {version = "1.0.140", features = ["derive"] }
 async-mutex = "1.4"
 serde_derive = "1.0.126"
 reqwest = { version = "0.11", features = ["blocking", "json"]}
-chrono = {version = "*", features = ["serde"]}
+chrono = {version = "0.4.23", features = ["serde"]}
 satellite = { git = "https://github.com/richinfante/satellite-rs.git", branch = "master" }
 tower = { version = "0.4.13", features = ["timeout", "limit", "buffer"] }
